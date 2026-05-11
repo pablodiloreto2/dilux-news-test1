@@ -23,7 +23,7 @@ output:
   language: es-AR
 schedule:
   frequency: daily
-  hour_local: 6
+  hour_local: 8
   timezone: America/Argentina/Buenos_Aires
 llm:
   max_tokens_ranking: 16000
