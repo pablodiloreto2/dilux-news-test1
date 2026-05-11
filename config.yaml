@@ -1,0 +1,58 @@
+# Generado por setup wizard. Editá libremente o re-corré el wizard.
+
+schema_version: '1.0'
+profile:
+  name: Pablo
+  countries:
+  - argentina
+  tone: rioplatense
+interests:
+- topic: sports
+  coverage: both
+- topic: news-general
+  coverage: both
+ai_country_filter:
+  enabled: true
+output:
+  style: detailed
+  group_related: true
+  max_news: 10
+  max_articles: 10
+  max_news_per_interest: 5
+  min_score: 5
+  language: es-AR
+schedule:
+  frequency: daily
+  hour_local: 6
+  timezone: America/Argentina/Buenos_Aires
+llm:
+  max_tokens_ranking: 16000
+  max_tokens_writing: 8000
+delivery:
+  email:
+    enabled: true
+    from: pablodiloreto@gmail.com
+    to: pablodiloreto@gmail.com
+    subject_template: 📰 Brief — {date}
+    smtp_host: smtp.gmail.com
+    smtp_port: 587
+  telegram:
+    enabled: false
+  discord:
+    enabled: false
+  slack:
+    enabled: false
+  rss:
+    enabled: false
+  pages:
+    enabled: false
+    branch: gh-pages
+    path: /
+watchdog:
+  enabled: false
+telemetry:
+  enabled: false
+window:
+  hours_back: 48
+profile_templates:
+- sports-fan
