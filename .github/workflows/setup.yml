@@ -1,0 +1,155 @@
+name: 🔧 Setup Wizard
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Tu nombre (aparece en el brief)"
+        required: true
+        type: string
+      profile_template:
+        description: "Plantilla de perfil base"
+        required: true
+        type: choice
+        options:
+          - news-junkie
+          - dev-backend
+          - dev-frontend
+          - dev-mobile
+          - devops-sre
+          - data-engineer
+          - data-scientist
+          - security-engineer
+          - pm-tech
+          - engineering-manager
+          - fintech-pro
+          - founder-startup
+          - ai-researcher
+          - business-pro
+          - culture-buff
+          - science-geek
+          - sports-fan
+          - nature-lover
+          - student-junior
+          - crypto-builder
+          - designer-ux
+        default: news-junkie
+      country:
+        description: "País principal (afecta fuentes locales)"
+        required: true
+        type: choice
+        options: [argentina, chile, brasil, colombia, espana, mexico, peru, uruguay, usa-global-en]
+        default: argentina
+      tone_override:
+        description: "Tono del brief (opcional)"
+        required: false
+        type: choice
+        options: ["", rioplatense, accesible, ejecutivo, tecnico-directo, critico, academico]
+      voice_style:
+        description: "Voice style (texto libre, opcional — pisa al tono)"
+        required: false
+        type: string
+      audience:
+        description: "Audiencia objetivo (texto libre, opcional)"
+        required: false
+        type: string
+      style:
+        description: "Estilo del brief"
+        required: false
+        type: choice
+        options: [detailed, express]
+        default: detailed
+      max_news_per_interest:
+        description: "Máximo de noticias por interés"
+        required: false
+        type: string
+        default: "5"
+      channels:
+        description: "Canales de delivery (CSV: email,telegram,discord,slack,rss)"
+        required: false
+        type: string
+        default: "email,telegram"
+      email_address:
+        description: "Email destino (si email está en channels)"
+        required: false
+        type: string
+      hour_local:
+        description: "Hora local de envío (0-23)"
+        required: false
+        type: string
+        default: "8"
+      timezone:
+        description: "Timezone IANA"
+        required: false
+        type: string
+        default: "America/Argentina/Buenos_Aires"
+      frequency:
+        description: "Frecuencia"
+        required: false
+        type: choice
+        options: [daily, weekday, weekly]
+        default: weekday
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      # Fase II: TestPyPI temporal. --extra-index-url para deps desde PyPI real.
+      # En Fase III revertir a `pip install -U dilux-news`.
+      - run: |
+          pip install \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            -U dilux-news
+
+      - run: |
+          dilux-news setup-from-inputs \
+            --name "${{ inputs.name }}" \
+            --template "${{ inputs.profile_template }}" \
+            --country "${{ inputs.country }}" \
+            --tone "${{ inputs.tone_override }}" \
+            --voice-style "${{ inputs.voice_style }}" \
+            --audience "${{ inputs.audience }}" \
+            --style "${{ inputs.style }}" \
+            --max-news-per-interest "${{ inputs.max_news_per_interest }}" \
+            --channels "${{ inputs.channels }}" \
+            --email "${{ inputs.email_address }}" \
+            --hour "${{ inputs.hour_local }}" \
+            --tz "${{ inputs.timezone }}" \
+            --frequency "${{ inputs.frequency }}"
+
+      - name: Commit config
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          # Archivo por archivo: git add con múltiples paths falla TODO si
+          # uno no existe (no stagea nada). Loop separado evita eso.
+          for f in config.yaml .env.example SETUP_PENDIENTE.md; do
+            git add "$f" 2>/dev/null || true
+          done
+          if git diff --cached --quiet; then
+            echo "nada para commitear"
+            exit 0
+          fi
+          git commit -m "setup: configure dilux-news"
+          git push
+
+      - run: |
+          echo "✅ Setup completo." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Próximos pasos:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Cargá los secrets que aparecen en SETUP_PENDIENTE.md (commiteado por este workflow)." >> $GITHUB_STEP_SUMMARY
+          echo "2. Dispará manualmente el workflow 'Daily Brief' para probar." >> $GITHUB_STEP_SUMMARY
+          if [ -f cron_suggestion.txt ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Cron sugerido (para tu hora/frecuencia/tz): \`$(cat cron_suggestion.txt)\`" >> $GITHUB_STEP_SUMMARY
+            echo "Si querés cambiar la hora, edití manualmente \`.github/workflows/daily.yml\`." >> $GITHUB_STEP_SUMMARY
+          fi
